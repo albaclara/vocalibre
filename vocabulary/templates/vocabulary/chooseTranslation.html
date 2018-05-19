@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block contengut %}
+
+<h2>Choose the language you want the translations in</h2>
+
+<ul class="listlang">
+{% for language in listLanguages %}
+	<li><a href="{% url "choose_subject" langApr language.0  %}" alt="Learn {{ language.1 }}" title="Learn {{ language.1 }}">{{ language.1 }}</a></li>
+{% endfor %}
+</ul>
+
+{% endblock %}

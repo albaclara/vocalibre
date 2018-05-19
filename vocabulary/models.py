@@ -7,4 +7,4 @@ class Category(models.Model):
 	name=models.CharField(max_length=255, verbose_name='name')
 
 	def __str__(self):
-		return self.wikidataId
+		return str(self.wikidataId)+' ('+self.name+')'

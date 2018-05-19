@@ -3,15 +3,15 @@
 
 {% block contengut %}
 
-<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec mauris risus, egestas ut justo eget, varius vehicula lacus. Nulla non nisi interdum, posuere est at, elementum leo.</p>
-<p> Quisque non iaculis libero, rhoncus congue felis. Suspendisse eu scelerisque nunc, id feugiat tortor. Suspendisse rutrum at lorem ac vestibulum. </p>
+<p><b>Voca Libre</b> is a tool to learn vocabulary in a lot of languages. It displays cards with a word, a picture, and often a translation and a sound.</p>
+<p>All those cards are generated automatically from <a href="https://www.wikidata.org" alt="Wikidata" title="Wikidata" class="structure">Wikidata</a> items, <a href="https://commons.wikimedia.org" alt="Wikimedia Commons" title="Wikimedia Commons" class="structure">Wikimedia Commons</a> pictures and <a href="https://lingualibre.fr" alt="Lingua Libre" title="Lingua Libre" class="structure">Lingua Libre</a> records.</p>
 
 
-<h2>Choose your language</h2>
+<h2>Choose the language you want to learn</h2>
 
 <ul class="listlang">
 {% for language in listLanguages %}
-	<li><a href="{% url "choose_theme" language.0  %}" alt="Learn {{ language.1 }}" title="Learn {{ language.1 }}">{{ language.1 }}</a></li>
+	<li><a href="{% url "choose_translation" language.0  %}" alt="Learn {{ language.1 }}" title="Learn {{ language.1 }}">{{ language.1 }}</a></li>
 {% endfor %}
 </ul>
 

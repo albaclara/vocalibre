@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     url('^/?$', views.ChooseLanguage, name="choose_language"),
-    url('^(?P<lang>\w+)/subject/?$', views.ChooseSubject, name="choose_theme"),
-    url('^(?P<lang>\w+)/(?P<subject>\w+)/?$', views.DisplayWords, name="display_words"),
+    url('^(?P<langApr>\w+)/choosetrans/?$', views.ChooseTranslation, name="choose_translation"),
+    url('^(?P<langApr>\w+)/(?P<langUt>\w+)/subject/?$', views.ChooseSubject, name="choose_subject"),
+    url('^(?P<langApr>\w+)/(?P<langUt>\w+)/(?P<subject>\w+)/?$', views.DisplayWords, name="display_words"),
 ]

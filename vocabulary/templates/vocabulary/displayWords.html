@@ -3,7 +3,8 @@
 
 {% block contengut %}
 
-<h2>{{ nameSubject|capfirst }}</h2>
+<h2>{{ nameSubjectApr|capfirst }}</h2>
+<h3>{% if nameSubjectUt != "" %}({{ nameSubjectUt|capfirst }}){% endif %}</h3>
 
 <div class="listWords">
 		{% for word in listWords %}
@@ -11,6 +12,7 @@
 	<div class="word">
 			
 			<h3>{{ word.0}}</h3>
+			<h4>{% if word.4 != "" %}({{ word.4}}){% endif %}</h4>
 			<img src="{{ word.1 }}">
 			
 			{% if word.2 != "" %}

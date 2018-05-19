@@ -85,7 +85,7 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 
  SELECT ?iso ?native WHERE {
   ?language wdt:P218 ?iso.
-  ?language wdt:P1705 ?native
+  ?language wdt:P1705 ?native.
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],fr". }
 }  """
 	sparql.setQuery(querystring)
@@ -125,11 +125,12 @@ PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?label ?label1  WHERE {
+SELECT ?label ?label1 WHERE {
   wd:"""+idcat+""" rdfs:label ?label.
-  wd:"""+idcat+""" rdfs:label ?label1.
-  FILTER(LANG(?label) = '"""+langApr+"""')
+  OPTIONAL {wd:"""+idcat+""" rdfs:label ?label1.
   FILTER(LANG(?label1) = '"""+langUt+"""')
+  }
+  FILTER(LANG(?label) = '"""+langApr+"""')
 }
 LIMIT 1
 		"""
@@ -141,7 +142,10 @@ LIMIT 1
 		print(resultats)
 		if len(resultats["results"]["bindings"])>0:
 			nameApr=resultats["results"]["bindings"][0]["label"]["value"]
-			nameUt=resultats["results"]["bindings"][0]["label1"]["value"]
+			if "label1" in resultats["results"]["bindings"][0]:
+				nameUt=resultats["results"]["bindings"][0]["label1"]["value"]
+			else:
+				nameUt=''
 		else:
 			nameApr=''
 			nameUt=''
@@ -205,9 +209,11 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?label ?label1  WHERE {
-wd:"""+subject+""" rdfs:label ?label ;  rdfs:label ?label1.
-FILTER(LANG(?label) = '"""+langApr+"""')
-FILTER(LANG(?label1) = '"""+langUt+"""')
+  wd:"""+subject+""" rdfs:label ?label.
+  OPTIONAL {wd:"""+subject+""" rdfs:label ?label1.
+  FILTER(LANG(?label1) = '"""+langUt+"""')
+  }
+  FILTER(LANG(?label) = '"""+langApr+"""')
 }
 LIMIT 1
 	"""
@@ -217,7 +223,10 @@ LIMIT 1
 	resultats = sparql.query().convert()
 	if len(resultats["results"]["bindings"])>0:
 		nameSubjectApr=resultats["results"]["bindings"][0]["label"]["value"]
-		nameSubjectUt=resultats["results"]["bindings"][0]["label1"]["value"]
+		if "label1" in resultats["results"]["bindings"][0]:
+			nameSubjectUt=resultats["results"]["bindings"][0]["label1"]["value"]
+		else:
+			nameSubjectUt=''
 	else:
 		nameSubjectApr=''
 		nameSubjectUt=''
@@ -230,33 +239,18 @@ PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT DISTINCT ?ident ?label ?label1 ?image (lang(?label) AS ?language)  WHERE {
-  ?ident wdt:P31|wdt:P279 wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
-  ?ident rdfs:label ?label.				 # store label in ?label
-  OPTIONAL { ?ident rdfs:label ?label1.	
-  FILTER (lang(?label1)=\""""+langUt+"""\")}			 # store label in ?label
-  ?ident wdt:P18 ?image .
-  FILTER (lang(?label)=\""""+langApr+"""\")
-  
-}
-LIMIT 12
-
-	"""
-	querystring = """
-PREFIX wikibase: <http://wikiba.se/ontology#>
-PREFIX wd: <http://www.wikidata.org/entity/>
-PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
 SELECT DISTINCT ?label ?label1  WHERE {
   ?ident wdt:P31|wdt:P279 wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
-  ?ident rdfs:label ?label.				 # store label in ?label
+  ?ident rdfs:label ?label.		
+  ?ident wdt:P18 ?image.		 # store label in ?label
+  ?ident wikibase:sitelinks ?linkcount .
   OPTIONAL { ?ident rdfs:label ?label1.	
   FILTER (lang(?label1)=\""""+langUt+"""\")}			 # store label in ?label
   ?ident wdt:P18 ?image .
   FILTER (lang(?label)=\""""+langApr+"""\")
   
 }
+ORDER BY DESC(?linkcount)
 LIMIT 12
 
 	"""
@@ -266,17 +260,41 @@ LIMIT 12
 
 	labelsWords = set()
 	dicoWords={}
-	print('-----------------')
 	for result in resultats["results"]["bindings"]:
-		print('\n'+str(result))
 		labelApr=result["label"]["value"]
 		if "label1" in result:
 			labelUt=result["label1"]["value"]
 		else:
 			labelUt=''
-		image=result["image"]["value"]
 			
-		print('-->'+labelApr)
+		
+		#Requête pour l'image
+		querystring="""
+SELECT DISTINCT ?item ?itemLabel ?image
+WHERE
+{
+  ?item wdt:P31|wdt:P279 wd:"""+subject+""". 
+  ?item rdfs:label ?itemLabel .
+  ?item wdt:P18 ?image .
+  FILTER(CONTAINS(?itemLabel, \""""+labelApr+"""\"))
+  FILTER (LANG(?itemLabel)="fr")
+}
+		"""
+		sparql.setQuery(querystring)
+		sparql.setReturnFormat(JSON)
+		resultats = sparql.query().convert()
+		
+		
+		if len(resultats["results"]["bindings"])>0:
+			image=resultats["results"]["bindings"][0]["image"]["value"]
+		else:
+			image=''
+			
+		
+		print('---------------')
+		print(image)
+		
+			
 		labelsWords.add(labelApr)
 		
 		
@@ -295,13 +313,51 @@ where {
 
 LIMIT 1
 """
-	
+		#Requête pour le son
+		querystring = """
+
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+select ?fichier ?label
+where {
+    ?record prop:P2 entity:Q2 .
+    ?record prop:P3 ?fichier.
+    ?record prop:P4 ?language .
+  
+    ?record prop:P5 ?locutor .
+    ?locutor llp:P4 ?languageStatement .
+    ?languageStatement llv:P4 ?language .
+    ?languageStatement llq:P16 ?languageLevel .
+  	
+  
+  
+    ?record rdfs:label ?label.
+    ?language prop:P12 ?wikidataId .
+
+    BIND(uri(concat("http://www.wikidata.org/entity/", ?wikidataId)) as ?wikidataItem).
+
+    SERVICE <https://query.wikidata.org/sparql> {
+        ?wikidataItem wdt:P218 ?iso.
+    }
+
+    SERVICE wikibase:label {
+        bd:serviceParam wikibase:language "fr,en" .
+    }
+    FILTER(str(?label) = \""""+labelApr+"""\")
+    FILTER(str(?iso) = '"""+langApr+"""')
+
+} 
+ORDER BY DESC(?languageLevel)
+LIMIT 1
+		"""
+		
 		sparql1.setQuery(querystring)
 		sparql1.setReturnFormat(JSON)
 		resultats = sparql1.query().convert()
 		
 		if len(resultats["results"]["bindings"])>0:
-			son=resultats["results"]["bindings"][0]["son"]["value"]
+			son=resultats["results"]["bindings"][0]["fichier"]["value"]
 			searchext=re.search(r'\.([^\.]*?)$', son)
 			if searchext:
 				extension=searchext.group(1)
@@ -318,7 +374,6 @@ LIMIT 1
 		
 		dicoWords[labelApr]=(image, son, extension, labelUt)
 	
-	print(labelsWords)
 	labelsWords=sorted_list = sorted(labelsWords, key=lambda s: s.lower())
 	
 	listWords=[]

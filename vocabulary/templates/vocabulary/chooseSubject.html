@@ -4,17 +4,25 @@
 {% block contengut %}
 
 <h2>Choose your subject</h2>
+{% if listSubjects|length == "0" %}
+	<p>Sorry, we don't have any subject for this language.</p>
 
+{% endif %}
 
 <div class="listWords">
-		{% for cat in listSubjects %}
-		
-	<div class="word">
-			
-			<h3><a href="{% url "display_words" lang cat.0 %}" alt="Learn {{ cat.1 }}" title="Learn {{ cat.1 }}">{{ cat.1 }}</a></h3>
-			<a href="{% url "display_words" lang cat.0 %}" alt="Learn {{ cat.1 }}" title="Learn {{ cat.1 }}"><img src="{{ cat.2 }}"></a>
 
-	</div>
+		{% for cat in listSubjects %}
+			{% if cat.1 != "" %}
+		
+				<div class="word">
+						<a href="{% url "display_words" langApr langUt cat.0 %}" alt="Learn {{ cat.1 }}" title="Learn {{ cat.1 }}"><h3>{{ cat.1|capfirst }}</h3>
+						
+							<h4>{% if cat.2 != "" %}({{ cat.2|capfirst }}){% endif %}</h4>
+						
+						<img src="{{ cat.3 }}"></a>
+
+				</div>
+			{% endif %}
 		{% endfor %}
 </div>
 
