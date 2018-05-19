@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block contengut %}
+
+<h2>Choose your subject</h2>
+
+
+<div class="listWords">
+		{% for cat in listSubjects %}
+		
+	<div class="word">
+			
+			<h3><a href="{% url "display_words" lang cat.0 %}" alt="Learn {{ cat.1 }}" title="Learn {{ cat.1 }}">{{ cat.1 }}</a></h3>
+			<a href="{% url "display_words" lang cat.0 %}" alt="Learn {{ cat.1 }}" title="Learn {{ cat.1 }}"><img src="{{ cat.2 }}"></a>
+
+	</div>
+		{% endfor %}
+</div>
+
+{% endblock %}

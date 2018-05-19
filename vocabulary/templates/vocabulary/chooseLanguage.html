@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block contengut %}
+
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec mauris risus, egestas ut justo eget, varius vehicula lacus. Nulla non nisi interdum, posuere est at, elementum leo.</p>
+<p> Quisque non iaculis libero, rhoncus congue felis. Suspendisse eu scelerisque nunc, id feugiat tortor. Suspendisse rutrum at lorem ac vestibulum. </p>
+
+
+<h2>Choose your language</h2>
+
+<ul class="listlang">
+{% for language in listLanguages %}
+	<li><a href="{% url "choose_theme" language.0  %}" alt="Learn {{ language.1 }}" title="Learn {{ language.1 }}">{{ language.1 }}</a></li>
+{% endfor %}
+</ul>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block contengut %}
+
+<h2>{{ nameSubject|capfirst }}</h2>
+
+<div class="listWords">
+		{% for word in listWords %}
+		
+	<div class="word">
+			
+			<h3>{{ word.0}}</h3>
+			<img src="{{ word.1 }}">
+			
+			{% if word.2 != "" %}
+				<audio controls="controls">
+				  <source src="{{ word.2 }}" type="audio/{{ word.3 }}">
+				  Votre navigateur ne prend pas en charge l'élément <code>audio</code>.
+				</audio>
+				
+			{% endif %}
+	</div>
+		{% endfor %}
+</div>
+
+{% endblock %}

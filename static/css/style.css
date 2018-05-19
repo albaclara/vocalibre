@@ -1,0 +1,126 @@
+@charset "utf-8";
+/* CSS Document */
+
+
+@media (min-width: 750px){
+  :root, input {
+    font-size: 1em;
+  }
+}
+@media (min-width: 600px) and (max-width: 900px){
+  :root, input {
+    font-size: 2vw;
+  }
+}
+
+@media (max-width: 600px){
+  :root, input {
+    font-size: 12px;
+  }
+}
+
+
+body {
+	margin:0;
+	padding:0;
+	font-family:Arial;
+	color:#393939;
+}
+
+a {
+	color:#00ab9e;
+	text-decoration:none;
+}
+
+a:hover {
+	color:#393939;
+}
+
+.haut {
+	background:#00ab9e;
+	
+}
+
+.contenu_haut {
+	width:90%;
+	margin-left:auto;
+	margin-right:auto;
+}
+
+
+.logo {
+	width:12vw;
+	max-width:80px;
+	float:left;
+}
+
+h1 {
+	color:white;
+	padding:0.7em 0.3em 0 0.3em;
+	margin-top:0;
+}
+
+.contenu {
+	width:90%;
+	margin-left:auto;
+	margin-right:auto;
+	text-align:center;
+}
+
+h2 {
+	color:#00ab9e;
+	
+}
+
+input {
+	color:#393939;
+
+}
+
+
+.listlang {
+	list-style-type:none;
+    -webkit-column-width:250px; /* Opera, Safari, Google Chrome */
+    -moz-column-width: 250px; /* Firefox */
+    column-width: 250px; /* Internet Explorer */
+    
+    -webkit-column-gap: 2em; /* Chrome, Safari, Opera */
+    -moz-column-gap: 2em; /* Firefox */
+    column-gap: 2em;
+	
+}
+
+
+.listWords {
+	display:flex;
+	flex-wrap:wrap;
+	justify-content:space-between;
+}
+
+.word {
+	width:24%;
+	min-width:200px;
+	border-radius:5px;
+	box-sizing:border-box;
+	padding:0.5em;
+	margin:1em;
+
+	-moz-box-shadow: 0px 0px 10px 3px #9b9b9b;
+	-webkit-box-shadow: 0px 0px 10px 3px #9b9b9b;
+	-o-box-shadow: 0px 0px 10px 3px #9b9b9b;
+	box-shadow: 0px 0px 10px 3px #9b9b9b;
+}
+
+.word img {
+	max-width:95%;
+}
+
+.word h3 {
+	margin-top:0;
+	margin-bottom:0.3em;
+}
+
+.word audio {
+	max-width:95%;
+	background:#00ab9e;
+}
