@@ -9,12 +9,9 @@ import re
 
 
 
+
 def ChooseLanguage(request):
-	
-	#
-	
-	
-	
+
 	#On récupère les langues pour lesquelles il y a des enregistrements
 	endpoint = "http://sparql.0x010c.fr/bigdata/namespace/wdq/sparql/"
 
@@ -24,10 +21,11 @@ def ChooseLanguage(request):
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 
-select DISTINCT ?language ?languageLabel
+select DISTINCT ?language ?languageLabel ?codewd
 where {
   ?record prop:P2 entity:Q2 .
   ?record prop:P4 ?language .
+  ?language prop:P12 ?codewd
    SERVICE wikibase:label {
 	bd:serviceParam wikibase:language "fr,en" .}
 } """
@@ -38,27 +36,83 @@ where {
 	listLanguages = []
 	for result in resultats["results"]["bindings"]:
 		labelLang=result["languageLabel"]["value"]
-		urlLang=result["language"]["value"]
-		print('------------')
-		print(urlLang)
-		recupcode=re.search(r'/([^/]*?)$', urlLang)
+		codeLang=result["codewd"]["value"]
+			
+		endpoint1 = "https://query.wikidata.org/sparql"
+	 
+		sparql1 = SPARQLWrapper(endpoint1)
 		
-		if recupcode:
-			codeLang=recupcode.group(1)
+		querystring="""
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+
+SELECT ?iso  WHERE {
+wd:"""+codeLang+""" wdt:P218 ?iso.
+
+}
+		"""
 		
-			listLanguages.append((codeLang, labelLang))
+		print('---------------')
+		print(codeLang)
+		print(querystring)
+		
+		sparql1.setQuery(querystring)
+		sparql1.setReturnFormat(JSON)
+		resultats1 = sparql1.query().convert()
+		print(resultats1)
+		if len(resultats1["results"]["bindings"])>0:
+			isoLang=resultats1["results"]["bindings"][0]["iso"]["value"]
+			
+			listLanguages.append((isoLang, labelLang))
 	
 	return render(request, 'vocabulary/chooseLanguage.html', locals())
+
+
+
+
+
+def ChooseTranslation(request, langApr):
+
+	#On récupère les langues existantes
+	endpoint = "https://query.wikidata.org/sparql"
+
+	sparql = SPARQLWrapper(endpoint)
+
+	querystring = """
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?iso ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],fr". }
+}  """
+	sparql.setQuery(querystring)
+	sparql.setReturnFormat(JSON)
+	resultats = sparql.query().convert()
+	print('-----------')
+
+	listLabels = []
+	dicoLanguages= {}
+	for result in resultats["results"]["bindings"]:
+		labelLang=result["native"]["value"]
+		codeLang=result["iso"]["value"]
+		listLabels.append(labelLang)
+		dicoLanguages[labelLang]=codeLang
 		
+	listLabels=sorted(listLabels, key=lambda s: s.lower())
+	listLanguages=[]
+	for language in listLabels:
+		listLanguages.append((dicoLanguages[language], language))
+	
+	return render(request, 'vocabulary/chooseTranslation.html', locals())
 		
 	
-def ChooseSubject(request, langApr):
+def ChooseSubject(request, langApr, langUt):
 	endpoint = "https://query.wikidata.org/sparql"
  
 	sparql = SPARQLWrapper(endpoint)
-
-	langApr="fr"
-	langUt='oc'
 	
 	listCats=[]
 	dicoCats={}
@@ -101,9 +155,9 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?image  WHERE {
-  ?color wdt:P31 wd:"""+idcat+""".		# instance or subclass of »"""+idcat+"""«
-  ?color rdfs:label ?label.				 # store label in ?label
-  ?color wdt:P18 ?image .
+  ?ident wdt:P31 wd:"""+idcat+""".		# instance or subclass of »"""+idcat+"""«
+  ?ident rdfs:label ?label.				 # store label in ?label
+  ?ident wdt:P18 ?image .
   FILTER (lang(?label)=\""""+langApr+"""\")
 }
 LIMIT 1
@@ -122,7 +176,7 @@ LIMIT 1
 		listCats.append(idcat)
 		dicoCats[idcat]=(nameApr, nameUt, image)
 	
-	listCats=sorted_list = sorted(listCats, key=lambda s: s.lower())
+	listCats= sorted(listCats, key=lambda s: s.lower())
 	
 	listSubjects=[]
 	for cat in listCats:
@@ -133,8 +187,7 @@ LIMIT 1
 	
 	
 	
-def DisplayWords(request, langApr, subject):
-	langUt='oc'
+def DisplayWords(request, langApr, langUt, subject):
 	
 	endpoint = "https://query.wikidata.org/sparql"
 	endpoint1 = "http://sparql.0x010c.fr/bigdata/namespace/wdq/sparql/"
@@ -162,8 +215,6 @@ LIMIT 1
 	sparql.setQuery(querystring)
 	sparql.setReturnFormat(JSON)
 	resultats = sparql.query().convert()
-	print('-----------------')
-	print(resultats)
 	if len(resultats["results"]["bindings"])>0:
 		nameSubjectApr=resultats["results"]["bindings"][0]["label"]["value"]
 		nameSubjectUt=resultats["results"]["bindings"][0]["label1"]["value"]
@@ -179,16 +230,34 @@ PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?color ?label ?label1 ?image (lang(?label) AS ?language)  WHERE {
-  ?color wdt:P31 wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
-  ?color rdfs:label ?label.				 # store label in ?label
-  OPTIONAL { ?color rdfs:label ?label1.	
+SELECT DISTINCT ?ident ?label ?label1 ?image (lang(?label) AS ?language)  WHERE {
+  ?ident wdt:P31|wdt:P279 wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
+  ?ident rdfs:label ?label.				 # store label in ?label
+  OPTIONAL { ?ident rdfs:label ?label1.	
   FILTER (lang(?label1)=\""""+langUt+"""\")}			 # store label in ?label
-  ?color wdt:P18 ?image .
+  ?ident wdt:P18 ?image .
   FILTER (lang(?label)=\""""+langApr+"""\")
   
 }
-LIMIT 9
+LIMIT 12
+
+	"""
+	querystring = """
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?label ?label1  WHERE {
+  ?ident wdt:P31|wdt:P279 wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
+  ?ident rdfs:label ?label.				 # store label in ?label
+  OPTIONAL { ?ident rdfs:label ?label1.	
+  FILTER (lang(?label1)=\""""+langUt+"""\")}			 # store label in ?label
+  ?ident wdt:P18 ?image .
+  FILTER (lang(?label)=\""""+langApr+"""\")
+  
+}
+LIMIT 12
 
 	"""
 	sparql.setQuery(querystring)
@@ -197,7 +266,9 @@ LIMIT 9
 
 	labelsWords = set()
 	dicoWords={}
+	print('-----------------')
 	for result in resultats["results"]["bindings"]:
+		print('\n'+str(result))
 		labelApr=result["label"]["value"]
 		if "label1" in result:
 			labelUt=result["label1"]["value"]
@@ -205,9 +276,9 @@ LIMIT 9
 			labelUt=''
 		image=result["image"]["value"]
 			
-		print(image)
-		
+		print('-->'+labelApr)
 		labelsWords.add(labelApr)
+		
 		
 		#Requête pour le son
 		querystring = """
@@ -218,12 +289,13 @@ where {
   ?record prop:P2 entity:Q2 .
   ?record prop:P3 ?son.
   ?record rdfs:label ?label.
-  FILTER (str(?label) = '"""+labelApr+"""').
+  FILTER (str(?label) = \""""+labelApr+"""\").
 
 }
 
 LIMIT 1
 """
+	
 		sparql1.setQuery(querystring)
 		sparql1.setReturnFormat(JSON)
 		resultats = sparql1.query().convert()
@@ -245,6 +317,8 @@ LIMIT 1
 		
 		
 		dicoWords[labelApr]=(image, son, extension, labelUt)
+	
+	print(labelsWords)
 	labelsWords=sorted_list = sorted(labelsWords, key=lambda s: s.lower())
 	
 	listWords=[]
