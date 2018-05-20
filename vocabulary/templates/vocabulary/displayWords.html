@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 
+{% block languages %}
+{% if langAprLabel != "" %}Learn {{ langAprLabel }}{% if langUtLabel != "" %} in {{ langUtLabel }}{% endif %} <a href="{% url "choose_language" %}" alt="Choose language" title="Choose language">&#8627;change{% endif %}
+{% endblock %}
 {% block contengut %}
 
 <h2>{{ nameSubjectApr|capfirst }}</h2>

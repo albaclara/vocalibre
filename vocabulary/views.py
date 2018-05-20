@@ -13,11 +13,11 @@ import re
 def ChooseLanguage(request):
 
 	#On récupère les langues pour lesquelles il y a des enregistrements
-	endpoint = "http://sparql.0x010c.fr/bigdata/namespace/wdq/sparql/"
+	endpoint = "https://query.wikidata.org/sparql"
 
 	sparql = SPARQLWrapper(endpoint)
 
-
+	#Ancienne requête pour info
 	querystring = """
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -40,29 +40,32 @@ where {
 } 
 	"""
 
+	querystring = """
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?iso ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],fr". }
+}  """
 	sparql.setQuery(querystring)
 	sparql.setReturnFormat(JSON)
 	resultats = sparql.query().convert()
-	
-	listIso=[]
-	dicoLabel={}
-	listLabel=[]
-	
+	print('-----------')
+
+	listLabels = []
+	dicoLanguages= {}
 	for result in resultats["results"]["bindings"]:
-		isoLang=result["iso"]["value"]
 		labelLang=result["native"]["value"]
+		codeLang=result["iso"]["value"]
+		listLabels.append(labelLang)
+		dicoLanguages[labelLang]=codeLang
 		
-		
-		if isoLang not in listIso:
-			listIso.append(isoLang)
-			dicoLabel[labelLang]=isoLang
-			listLabel.append(labelLang)
-	
-	listLabel.sort()
-	
+	listLabels=sorted(listLabels, key=lambda s: s.lower())
 	listLanguages=[]
-	for label in listLabel:
-		listLanguages.append((dicoLabel[label], label))
+	for language in listLabels:
+		listLanguages.append((dicoLanguages[language], language))
 		
 	
 	return render(request, 'vocabulary/chooseLanguage.html', locals())
@@ -73,10 +76,32 @@ where {
 
 def ChooseTranslation(request, langApr):
 
-	#On récupère les langues existantes
 	endpoint = "https://query.wikidata.org/sparql"
 
 	sparql = SPARQLWrapper(endpoint)
+	
+	#Requête du nom de la langue à apprendre
+	querystring="""
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native.
+  FILTER(?iso='"""+langApr+"""')
+} 
+LIMIT 1
+	"""
+	
+	#On récupère les langues existantes
+	sparql.setQuery(querystring)
+	sparql.setReturnFormat(JSON)
+	resultats = sparql.query().convert()
+	
+	if len(resultats["results"]["bindings"])>0:
+		langAprLabel=resultats["results"]["bindings"][0]["native"]["value"]
+	else:
+		langAprLabel=''
 
 	querystring = """
 PREFIX wd: <http://www.wikidata.org/entity/>
@@ -113,8 +138,54 @@ def ChooseSubject(request, langApr, langUt):
  
 	sparql = SPARQLWrapper(endpoint)
 	
+	#Requête du nom de la langue à apprendre
+	querystring="""
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native.
+  FILTER(?iso='"""+langApr+"""')
+} 
+LIMIT 1
+	"""
+	
+	sparql.setQuery(querystring)
+	sparql.setReturnFormat(JSON)
+	resultats = sparql.query().convert()
+	
+	if len(resultats["results"]["bindings"])>0:
+		langAprLabel=resultats["results"]["bindings"][0]["native"]["value"]
+	else:
+		langAprLabel=''
+	
+	#Requête du nom de la langue des traductions
+	querystring="""
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native.
+  FILTER(?iso='"""+langUt+"""')
+} 
+LIMIT 1
+	"""
+	
+	sparql.setQuery(querystring)
+	sparql.setReturnFormat(JSON)
+	resultats = sparql.query().convert()
+	
+	if len(resultats["results"]["bindings"])>0:
+		langUtLabel=resultats["results"]["bindings"][0]["native"]["value"]
+	else:
+		langUtLabel=''
+	
 	listCats=[]
 	dicoCats={}
+	
+	#Requête du nom de la catégorie
 	for category in Category.objects.all():
 		idcat=category.wikidataId
 	
@@ -134,15 +205,34 @@ SELECT ?label ?label1 WHERE {
 LIMIT 1
 		"""
 		
+		querystring = """
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?labelcat ?labelcat1 WHERE {
+  wd:"""+idcat+""" rdfs:label ?labelcat.
+  ?mot wdt:P31|wdt:P279 wd:"""+idcat+""" .
+      
+  ?mot rdfs:label ?labelmot.
+       
+  OPTIONAL {wd:"""+idcat+""" rdfs:label ?labelcat1.
+  FILTER(LANG(?labelcat1) = '"""+langUt+"""')
+  }
+  FILTER(LANG(?labelcat) = '"""+langApr+"""')
+  FILTER(LANG(?labelmot) = '"""+langApr+"""')
+}
+		"""
+		
 		sparql.setQuery(querystring)
 		sparql.setReturnFormat(JSON)
 		resultats = sparql.query().convert()
-		print('-----------------')
-		print(resultats)
+		
 		if len(resultats["results"]["bindings"])>0:
-			nameApr=resultats["results"]["bindings"][0]["label"]["value"]
-			if "label1" in resultats["results"]["bindings"][0]:
-				nameUt=resultats["results"]["bindings"][0]["label1"]["value"]
+			nameApr=resultats["results"]["bindings"][0]["labelcat"]["value"]
+			if "labelcat1" in resultats["results"]["bindings"][0]:
+				nameUt=resultats["results"]["bindings"][0]["labelcat1"]["value"]
 			else:
 				nameUt=''
 		else:
@@ -203,6 +293,50 @@ def DisplayWords(request, langApr, langUt, subject):
 	sparql1 = SPARQLWrapper(endpoint1)
 
 		
+	
+	#Requête du nom de la langue à apprendre
+	querystring="""
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native.
+  FILTER(?iso='"""+langApr+"""')
+} 
+LIMIT 1
+	"""
+	
+	sparql.setQuery(querystring)
+	sparql.setReturnFormat(JSON)
+	resultats = sparql.query().convert()
+	
+	if len(resultats["results"]["bindings"])>0:
+		langAprLabel=resultats["results"]["bindings"][0]["native"]["value"]
+	else:
+		langAprLabel=''
+	
+	#Requête du nom de la langue des traductions
+	querystring="""
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+
+ SELECT ?native WHERE {
+  ?language wdt:P218 ?iso.
+  ?language wdt:P1705 ?native.
+  FILTER(?iso='"""+langUt+"""')
+} 
+LIMIT 1
+	"""
+	
+	sparql.setQuery(querystring)
+	sparql.setReturnFormat(JSON)
+	resultats = sparql.query().convert()
+	
+	if len(resultats["results"]["bindings"])>0:
+		langUtLabel=resultats["results"]["bindings"][0]["native"]["value"]
+	else:
+		langUtLabel=''
 		
 	#Requête pour le nom de la catégorie
 	querystring = """

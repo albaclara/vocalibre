@@ -10,6 +10,10 @@
 
 <div class="haut">
   <div class="contenu_haut">
+  	<div class="languages">
+  	    {% block languages %}
+        {% endblock %}
+  	</div>
   	<a href="{% url "choose_language" %}" alt="Home" title="Home"><img src="{% static 'image_look/logo.png' %}" alt="voca libre" class="logo">
   	<h1>Voca Libre</a></h1>
   </div>

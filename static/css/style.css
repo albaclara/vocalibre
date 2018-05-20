@@ -51,6 +51,10 @@ a:hover {
 	
 }
 
+.haut a:hover {
+	color:white;
+}
+
 .contenu_haut {
 	width:90%;
 	margin-left:auto;
@@ -62,6 +66,13 @@ a:hover {
 	width:12vw;
 	max-width:80px;
 	float:left;
+}
+
+.languages {
+	float:right;
+	color:white;
+	font-weight:bold;
+	padding-top:2em;
 }
 
 h1 {
