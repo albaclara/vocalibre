@@ -213,7 +213,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT DISTINCT ?labelcat ?labelcat1 WHERE {
   wd:"""+idcat+""" rdfs:label ?labelcat.
-  ?mot wdt:P31|wdt:P279 wd:"""+idcat+""" .
+  ?mot wdt:P31|wdt:P279*/wdt:P279? wd:"""+idcat+""" .
       
   ?mot rdfs:label ?labelmot.
        
@@ -248,7 +248,7 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?image  WHERE {
-  ?ident wdt:P31 wd:"""+idcat+""".		# instance or subclass of »"""+idcat+"""«
+  ?ident wdt:P31|wdt:P279*/wdt:P279? wd:"""+idcat+""".		# instance or subclass of »"""+idcat+"""«
   ?ident rdfs:label ?label.				 # store label in ?label
   ?ident wdt:P18 ?image .
   ?ident wikibase:sitelinks ?linkcount .
@@ -377,7 +377,7 @@ PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT DISTINCT ?label ?label1  WHERE {
-  ?ident wdt:P31|wdt:P279 wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
+  ?ident wdt:P31|wdt:P279*/wdt:P279? wd:"""+subject+""".		# instance or subclass of »"""+subject+"""«
   ?ident rdfs:label ?label.		
   ?ident wdt:P18 ?image.		 # store label in ?label
   ?ident wikibase:sitelinks ?linkcount .
@@ -412,7 +412,7 @@ LIMIT 12
 SELECT DISTINCT ?item ?itemLabel ?image
 WHERE
 {
-  ?item wdt:P31|wdt:P279 wd:"""+subject+""". 
+  ?item wdt:P31|wdt:P279*/wdt:P279? wd:"""+subject+""". 
   ?item rdfs:label ?itemLabel .
   ?item wdt:P18 ?image .
   FILTER(str(?itemLabel) = \""""+labelApr+"""\")
