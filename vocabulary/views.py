@@ -17,54 +17,53 @@ def ChooseLanguage(request):
 
 	sparql = SPARQLWrapper(endpoint)
 
+
 	querystring = """
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
 
-select DISTINCT ?language ?languageLabel ?codewd
+select DISTINCT ?language ?native ?codewd ?iso
 where {
   ?record prop:P2 entity:Q2 .
   ?record prop:P4 ?language .
-  ?language prop:P12 ?codewd
+  ?language prop:P12 ?codewd.
+  ?language prop:P12 ?wikidataId .
+
+  BIND(uri(concat("http://www.wikidata.org/entity/", ?wikidataId)) as ?wikidataItem).
+
+    SERVICE <https://query.wikidata.org/sparql> {
+        ?wikidataItem wdt:P218 ?iso.
+        ?wikidataItem wdt:P1705 ?native.
+    }
    SERVICE wikibase:label {
-	bd:serviceParam wikibase:language "fr,en" .}
-} """
+    bd:serviceParam wikibase:language "fr,en" .}
+} 
+	"""
+
 	sparql.setQuery(querystring)
 	sparql.setReturnFormat(JSON)
 	resultats = sparql.query().convert()
-
-	listLanguages = []
+	
+	listIso=[]
+	dicoLabel={}
+	listLabel=[]
+	
 	for result in resultats["results"]["bindings"]:
-		labelLang=result["languageLabel"]["value"]
-		codeLang=result["codewd"]["value"]
-			
-		endpoint1 = "https://query.wikidata.org/sparql"
-	 
-		sparql1 = SPARQLWrapper(endpoint1)
+		isoLang=result["iso"]["value"]
+		labelLang=result["native"]["value"]
 		
-		querystring="""
-PREFIX wd: <http://www.wikidata.org/entity/>
-PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-
-
-SELECT ?iso  WHERE {
-wd:"""+codeLang+""" wdt:P218 ?iso.
-
-}
-		"""
 		
-		print('---------------')
-		print(codeLang)
-		print(querystring)
+		if isoLang not in listIso:
+			listIso.append(isoLang)
+			dicoLabel[labelLang]=isoLang
+			listLabel.append(labelLang)
+	
+	listLabel.sort()
+	
+	listLanguages=[]
+	for label in listLabel:
+		listLanguages.append((dicoLabel[label], label))
 		
-		sparql1.setQuery(querystring)
-		sparql1.setReturnFormat(JSON)
-		resultats1 = sparql1.query().convert()
-		print(resultats1)
-		if len(resultats1["results"]["bindings"])>0:
-			isoLang=resultats1["results"]["bindings"][0]["iso"]["value"]
-			
-			listLanguages.append((isoLang, labelLang))
 	
 	return render(request, 'vocabulary/chooseLanguage.html', locals())
 
@@ -266,7 +265,9 @@ LIMIT 12
 			labelUt=result["label1"]["value"]
 		else:
 			labelUt=''
-			
+		
+		print('------------')
+		print(labelApr)
 		
 		#Requête pour l'image
 		querystring="""
@@ -276,10 +277,12 @@ WHERE
   ?item wdt:P31|wdt:P279 wd:"""+subject+""". 
   ?item rdfs:label ?itemLabel .
   ?item wdt:P18 ?image .
-  FILTER(CONTAINS(?itemLabel, \""""+labelApr+"""\"))
-  FILTER (LANG(?itemLabel)="fr")
+  FILTER(str(?itemLabel) = \""""+labelApr+"""\")
+  FILTER (LANG(?itemLabel)=\""""+langApr+"""\")
 }
 		"""
+		
+		print(querystring)
 		sparql.setQuery(querystring)
 		sparql.setReturnFormat(JSON)
 		resultats = sparql.query().convert()
@@ -298,21 +301,6 @@ WHERE
 		labelsWords.add(labelApr)
 		
 		
-		#Requête pour le son
-		querystring = """
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-		
-select DISTINCT ?record ?label ?son
-where {
-  ?record prop:P2 entity:Q2 .
-  ?record prop:P3 ?son.
-  ?record rdfs:label ?label.
-  FILTER (str(?label) = \""""+labelApr+"""\").
-
-}
-
-LIMIT 1
-"""
 		#Requête pour le son
 		querystring = """
 
@@ -383,5 +371,47 @@ LIMIT 1
 	return render(request, 'vocabulary/displayWords.html', locals())
 		
 		
+
+def AllWords(request, langApr):
+	
+	listWords=set()
+	for category in Category.objects.all():
+		idcat=category.wikidataId
 		
 		
+		endpoint = "https://query.wikidata.org/sparql"
+		sparql = SPARQLWrapper(endpoint)
+		
+		querystring = """
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?label ?label1  WHERE {
+  ?ident wdt:P31|wdt:P279 wd:"""+idcat+""".	
+  ?ident rdfs:label ?label.		
+  ?ident wdt:P18 ?image.		 # store label in ?label
+  ?ident wikibase:sitelinks ?linkcount .
+  ?ident wdt:P18 ?image .
+  FILTER (lang(?label)=\""""+langApr+"""\")
+  
+}
+ORDER BY DESC(?linkcount)
+LIMIT 12
+"""		
+		
+		sparql.setQuery(querystring)
+		sparql.setReturnFormat(JSON)
+		resultats = sparql.query().convert()
+	
+		for result in resultats["results"]["bindings"]:
+			labelApr=result["label"]["value"]
+			listWords.add(labelApr)
+		
+	listWords=list(listWords)
+	listWords=sorted(listWords, key=lambda s: s.lower())
+	
+	return render(request, 'vocabulary/allWords.html', locals())
+		
+			

@@ -8,4 +8,5 @@ urlpatterns = [
     url('^(?P<langApr>\w+)/choosetrans/?$', views.ChooseTranslation, name="choose_translation"),
     url('^(?P<langApr>\w+)/(?P<langUt>\w+)/subject/?$', views.ChooseSubject, name="choose_subject"),
     url('^(?P<langApr>\w+)/(?P<langUt>\w+)/(?P<subject>\w+)/?$', views.DisplayWords, name="display_words"),
+    url('^allwords/(?P<langApr>\w+)/?$', views.AllWords, name="all_words"),
 ]

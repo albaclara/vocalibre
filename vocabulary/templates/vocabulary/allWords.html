@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block contengut %}
+
+<h2>To record :</h2>
+
+[{% for word in listWords %}"{{ word }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
+{% endblock %}
