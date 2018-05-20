@@ -11,7 +11,7 @@
 		
 	<div class="word">
 			
-			<h3>{{ word.0}}</h3>
+			<h3>{{ word.0|capfirst }}</h3>
 			<h4>{% if word.4 != "" %}({{ word.4}}){% endif %}</h4>
 			<img src="{{ word.1 }}">
 			

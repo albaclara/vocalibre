@@ -161,8 +161,10 @@ SELECT ?image  WHERE {
   ?ident wdt:P31 wd:"""+idcat+""".		# instance or subclass of »"""+idcat+"""«
   ?ident rdfs:label ?label.				 # store label in ?label
   ?ident wdt:P18 ?image .
+  ?ident wikibase:sitelinks ?linkcount .
   FILTER (lang(?label)=\""""+langApr+"""\")
 }
+ORDER BY DESC(?linkcount)
 LIMIT 1
 
 	"""
@@ -172,6 +174,8 @@ LIMIT 1
 		
 		if len(resultats["results"]["bindings"])>0:
 			image=resultats["results"]["bindings"][0]["image"]["value"]
+			image=re.sub(r'/File:', '', image)
+			image=image+'?width=300'
 			
 		else:
 			image=''
@@ -290,6 +294,8 @@ WHERE
 		
 		if len(resultats["results"]["bindings"])>0:
 			image=resultats["results"]["bindings"][0]["image"]["value"]
+			image=re.sub(r'/File:', '', image)
+			image=image+'?width=300'
 		else:
 			image=''
 			
@@ -414,4 +420,13 @@ LIMIT 12
 	
 	return render(request, 'vocabulary/allWords.html', locals())
 		
-			
+	
+
+def TestLook(request):
+
+	
+	
+	return render(request, 'vocabulary/paginalook.html', locals())
+
+
+		
